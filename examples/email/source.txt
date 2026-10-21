@@ -1,0 +1,11 @@
+From: ops@northwind-logistics.example
+Subject: Delay on order 44-1829
+
+Hi Priya,
+
+Your order 44-1829 (2 cartons, 18.4 kg) reached the Leicester depot at 06:40 on 14 Oct.
+Customs hold: HS code 6110.20 flagged for review by Zöllner Brokerage.
+New delivery estimate: 17 Oct. Carrier reference: NWL-77310.
+
+Regards,
+Tomás Ruiz

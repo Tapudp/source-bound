@@ -1,0 +1,36 @@
+{
+  "entities": [
+    {
+      "text": "44-1829",
+      "type": "order_id",
+      "confidence": 0.97,
+      "start": 16,
+      "end": 23,
+      "context": ""
+    },
+    {
+      "text": "लेस्टर डिपो",
+      "type": "location",
+      "confidence": 0.9,
+      "start": 24,
+      "end": 55,
+      "context": ""
+    },
+    {
+      "text": "17 अक्टूबर",
+      "type": "new_delivery_date",
+      "confidence": 0.92,
+      "start": 137,
+      "end": 161,
+      "context": ""
+    },
+    {
+      "text": "NWL-77310",
+      "type": "carrier_reference",
+      "confidence": 0.95,
+      "start": 192,
+      "end": 201,
+      "context": ""
+    }
+  ]
+}

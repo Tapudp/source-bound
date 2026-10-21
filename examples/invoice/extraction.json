@@ -1,0 +1,49 @@
+{
+  "extractions": [
+    {
+      "extraction_class": "invoice_number",
+      "extraction_text": "INV-2026-0418",
+      "char_interval": {
+        "start_pos": 12,
+        "end_pos": 25
+      },
+      "alignment_status": "match_exact"
+    },
+    {
+      "extraction_class": "customer",
+      "extraction_text": "Harbour Freight Traders Ltd",
+      "char_interval": {
+        "start_pos": 35,
+        "end_pos": 62
+      },
+      "alignment_status": "match_exact"
+    },
+    {
+      "extraction_class": "due_date",
+      "extraction_text": "1 Nov 2026",
+      "char_interval": {
+        "start_pos": 123,
+        "end_pos": 133
+      },
+      "alignment_status": "match_exact"
+    },
+    {
+      "extraction_class": "total",
+      "extraction_text": "USD 4,105.00",
+      "char_interval": {
+        "start_pos": 342,
+        "end_pos": 354
+      },
+      "alignment_status": "match_exact"
+    },
+    {
+      "extraction_class": "total",
+      "extraction_text": "USD 4,150.00",
+      "char_interval": {
+        "start_pos": 342,
+        "end_pos": 354
+      },
+      "alignment_status": "match_fuzzy"
+    }
+  ]
+}

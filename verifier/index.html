@@ -1,0 +1,274 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pointer Verifier</title>
+<meta name="description" content="Paste a document and an AI extraction. See which answers really point at the source, which were invented, and which point at the wrong place.">
+<style>
+  :root {
+    --bg: #fbfaf7; --surface: #ffffff; --ink: #1d1d1b; --muted: #5f5d57; --line: #e4e1d9;
+    --accent: #1f5f8b; --accent-soft: #e5eef5;
+    --ok: #2f6b3a; --ok-soft: #dff0e1; --warn: #8a5a00; --warn-soft: #fbefd2;
+    --bad: #a3321b; --bad-soft: #f8e1d9; --none: #6a6862; --none-soft: #eceae4;
+    --radius: 10px; --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    --sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #141413; --surface: #1c1c1a; --ink: #ecebe6; --muted: #a8a59c; --line: #2f2e2b;
+      --accent: #7fb4db; --accent-soft: #1d2c37;
+      --ok: #8cc896; --ok-soft: #1c2e20; --warn: #e5bd63; --warn-soft: #362b14;
+      --bad: #ef9a7d; --bad-soft: #3a2119; --none: #b3b0a7; --none-soft: #2a2926;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #141413; --surface: #1c1c1a; --ink: #ecebe6; --muted: #a8a59c; --line: #2f2e2b;
+    --accent: #7fb4db; --accent-soft: #1d2c37;
+    --ok: #8cc896; --ok-soft: #1c2e20; --warn: #e5bd63; --warn-soft: #362b14;
+    --bad: #ef9a7d; --bad-soft: #3a2119; --none: #b3b0a7; --none-soft: #2a2926;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.55 var(--sans); }
+  main { max-width: 1120px; margin: 0 auto; padding: 32px 16px 64px; }
+  h1 { font-size: clamp(1.6rem, 3.2vw, 2.2rem); line-height: 1.15; margin: 0 0 8px; letter-spacing: -0.01em; }
+  h2 { font-size: 1.05rem; margin: 0 0 12px; }
+  h3 { font-size: 0.95rem; margin: 0 0 6px; }
+  p.lede { color: var(--muted); max-width: 72ch; margin: 0 0 24px; }
+  a { color: var(--accent); }
+  .grid { display: grid; gap: 16px; grid-template-columns: 1fr; }
+  .grid > * { min-width: 0; }
+  @media (min-width: 900px) { .grid.two { grid-template-columns: 1fr 1fr; } }
+  .card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 18px; }
+  label { display: block; font-size: 0.85rem; color: var(--muted); margin: 0 0 6px; }
+  textarea, select { width: 100%; font: 13px/1.5 var(--mono); color: var(--ink); background: var(--bg);
+    border: 1px solid var(--line); border-radius: 6px; padding: 10px; }
+  textarea { min-height: 260px; resize: vertical; }
+  select { font-family: var(--sans); font-size: 14px; padding: 8px 10px; }
+  textarea:focus, select:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+  .row { display: flex; gap: 12px; flex-wrap: wrap; align-items: end; margin-bottom: 16px; }
+  .row > div { flex: 1 1 220px; }
+  .hint { font-size: 0.8rem; color: var(--muted); margin-top: 6px; }
+  .metrics { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); margin-bottom: 16px; }
+  .metric { border: 1px solid var(--line); border-radius: 8px; padding: 12px; background: var(--bg); }
+  .metric .k { font-size: 0.8rem; color: var(--muted); }
+  .metric .v { font: 600 1.35rem var(--mono); margin-top: 2px; }
+  .metric .s { font-size: 0.8rem; color: var(--muted); margin-top: 4px; }
+  .doc { font: 14px/1.7 var(--mono); white-space: pre-wrap; word-break: break-word; background: var(--bg);
+    border: 1px solid var(--line); border-radius: 8px; padding: 14px; max-height: 420px; overflow: auto; }
+  mark { color: inherit; border-radius: 3px; padding: 1px 0; }
+  mark.exact, mark.normalized { background: var(--ok-soft); box-shadow: inset 0 -2px 0 var(--ok); }
+  mark.misplaced { background: var(--warn-soft); box-shadow: inset 0 -2px 0 var(--warn); }
+  mark.found { background: transparent; outline: 2px dashed var(--warn); outline-offset: 1px; }
+  mark.unaligned, mark.pointer_only { background: var(--bad-soft); box-shadow: inset 0 -2px 0 var(--bad); }
+  .table-wrap { overflow-x: auto; }
+  table { border-collapse: collapse; width: 100%; min-width: 680px; font-size: 0.88rem; }
+  th, td { padding: 8px 6px; text-align: left; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { color: var(--muted); font-weight: 600; font-size: 0.8rem; }
+  td.mono { font-family: var(--mono); font-size: 0.82rem; word-break: break-word; }
+  .badge { display: inline-block; font: 600 0.72rem var(--sans); padding: 2px 7px; border-radius: 4px; white-space: nowrap; }
+  .b-exact, .b-normalized { background: var(--ok-soft); color: var(--ok); }
+  .b-misplaced { background: var(--warn-soft); color: var(--warn); }
+  .b-unaligned, .b-out_of_range, .b-unanchored { background: var(--bad-soft); color: var(--bad); }
+  .b-absent, .b-pointer_only { background: var(--none-soft); color: var(--none); }
+  .note { font-size: 0.82rem; color: var(--muted); margin-top: 4px; }
+  .error { color: var(--bad); font-weight: 600; }
+  .legend { display: flex; gap: 16px; flex-wrap: wrap; font-size: 0.8rem; color: var(--muted); margin-top: 8px; }
+  .learn { margin-top: 40px; }
+  .learn > h2 { font-size: 1.35rem; margin-bottom: 4px; }
+  .learn .grid { margin-top: 16px; }
+  @media (min-width: 900px) { .learn .grid { grid-template-columns: repeat(3, 1fr); } }
+  .learn ul { margin: 0; padding-left: 18px; font-size: 0.9rem; }
+  .learn li { margin: 4px 0; }
+  .fact { font-size: 0.9rem; }
+  .fact b { font-family: var(--mono); }
+  .src { font-size: 0.78rem; color: var(--muted); }
+</style>
+</head>
+<body>
+<main>
+  <h1>Pointer Verifier</h1>
+  <p class="lede">Some AI models no longer write their answers. They <b>point</b> at them: "the order number is the text between character 93 and 100 of this email". A pointer can be checked by anyone, for free, by looking at the source. This page does that check. Paste a document and an AI extraction, and see which answers really come from the source, which were invented, and which point at the wrong place. Part of <a href="../">Source-Bound</a>. Nothing you paste leaves your browser.</p>
+
+  <div class="row">
+    <div>
+      <label for="example">Example</label>
+      <select id="example"></select>
+    </div>
+    <div>
+      <label for="unit">Offsets are counted in</label>
+      <select id="unit">
+        <option value="auto">Detect automatically</option>
+        <option value="codepoint">Characters (Python-style code points)</option>
+        <option value="utf16">UTF-16 units (JavaScript-style)</option>
+        <option value="byte">UTF-8 bytes</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="grid two">
+    <section class="card">
+      <label for="source">Source document</label>
+      <textarea id="source" spellcheck="false"></textarea>
+    </section>
+    <section class="card">
+      <label for="extraction">AI extraction (JSON)</label>
+      <textarea id="extraction" spellcheck="false"></textarea>
+      <div class="hint">Reads ScaleDown Extract, Google LangExtract, Anthropic citations, <a href="../spec/span-ledger-entry.schema.json">Span Ledger</a> entries, or any list of <code>{"start", "end", "text"}</code>.</div>
+    </section>
+  </div>
+
+  <section class="card" style="margin-top:16px" aria-labelledby="res-h">
+    <h2 id="res-h">Result</h2>
+    <div id="error" class="error" role="alert"></div>
+    <div class="metrics" id="metrics"></div>
+    <div class="doc" id="doc" aria-label="Source with the pointed spans highlighted"></div>
+    <div class="legend">
+      <span><mark class="exact">verified</mark> the pointer lands on the claimed text</span>
+      <span><mark class="misplaced">wrong place</mark> where the pointer lands instead</span>
+      <span><mark class="found">dashed</mark>&nbsp; where the claimed text really is</span>
+      <span><mark class="unaligned">not in source</mark> what the pointer lands on, for a claim that appears nowhere</span>
+    </div>
+    <div class="table-wrap" style="margin-top:16px">
+      <table>
+        <thead><tr><th>Field</th><th>Verdict</th><th>AI claimed</th><th>Source says at those offsets</th><th>Confidence</th></tr></thead>
+        <tbody id="rows"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="learn" aria-labelledby="learn-h">
+    <h2 id="learn-h">What the verdicts mean</h2>
+    <p class="lede">A pointer can fail in more ways than a written answer, and every way is checkable. That is the point.</p>
+    <div class="grid">
+      <article class="card">
+        <h3>Trust it</h3>
+        <ul>
+          <li><span class="badge b-exact">exact</span> The text at the offsets is exactly what the model claimed.</li>
+          <li><span class="badge b-normalized">normalized</span> Same text once case and spacing are ignored.</li>
+        </ul>
+        <p class="note">Verified only means the model quoted the source correctly. Whether the quote is the <i>right answer</i> to the question is a second check: see <a href="../concepts/verify-by-slice.md">Verify by Slice</a>.</p>
+      </article>
+      <article class="card">
+        <h3>Fix it</h3>
+        <ul>
+          <li><span class="badge b-misplaced">misplaced</span> The text exists in the source, but the offsets point somewhere else. The verifier suggests the right position.</li>
+          <li><span class="badge b-out_of_range">out of range</span> The offsets fall outside the document. The source changed, or OCR or compression moved the text.</li>
+          <li>A <b>byte offsets</b> warning means slicing by characters will break on accents, Hindi, Arabic or emoji.</li>
+        </ul>
+      </article>
+      <article class="card">
+        <h3>Never store it</h3>
+        <ul>
+          <li><span class="badge b-unaligned">unaligned</span> The claimed text appears nowhere in the source. Invented, or rewritten on the way.</li>
+          <li><span class="badge b-unanchored">unanchored</span> A value with no pointer at all. It cannot be checked by slicing.</li>
+          <li><span class="badge b-absent">absent</span> Nothing was found. Store "not found", never a value at position 0.</li>
+        </ul>
+      </article>
+    </div>
+
+    <h2 style="margin-top:32px">What published research says</h2>
+    <div class="grid">
+      <article class="card fact">
+        <p>Constrained decoding raised small models' schema validity from <b>78.6–92.9%</b> to <b>100%</b>, but left the accuracy gap: the shape was always right, the meaning not always.</p>
+        <p class="src"><a href="https://arxiv.org/abs/2609.23742">arXiv 2609.23742</a>, Sept 2026</p>
+      </article>
+      <article class="card fact">
+        <p>Returning only verbatim spans stops invented text, yet the best span selector reached only <b>53.6</b> word-level F1. A real quote can still be the wrong quote.</p>
+        <p class="src"><a href="https://arxiv.org/abs/2605.21102">ACL-Verbatim, arXiv 2605.21102</a></p>
+      </article>
+      <article class="card fact">
+        <p>After compressing context, citation precision measured against the compressed text was <b>0.86</b>; against the original source it fell to <b>0.12</b>. Compression detaches the pointer from the evidence.</p>
+        <p class="src"><a href="https://arxiv.org/abs/2609.14245">Attribution-Compression Frontier, arXiv 2609.14245</a></p>
+      </article>
+    </div>
+    <p class="note" style="margin-top:12px">The built-in examples are illustrative inputs written in each product's documented response shape, not real model outputs. Regenerate them with <code>node tools/build-examples.js</code>.</p>
+  </section>
+</main>
+
+<script src="verify.js"></script>
+<script src="examples.js"></script>
+<script>
+(function () {
+  "use strict";
+  const SB = window.SourceBound;
+  const EX = window.SOURCE_BOUND_EXAMPLES || [];
+  const $ = (id) => document.getElementById(id);
+  const LABELS = { exact: "exact", normalized: "normalized", misplaced: "misplaced", unaligned: "unaligned",
+    unanchored: "unanchored", absent: "absent", out_of_range: "out of range", pointer_only: "pointer only" };
+
+  EX.forEach((x, i) => { const o = document.createElement("option"); o.value = String(i); o.textContent = x.title; $("example").appendChild(o); });
+  const blank = document.createElement("option"); blank.value = "blank"; blank.textContent = "Blank: paste your own"; $("example").appendChild(blank);
+
+  function load(i) {
+    if (i === "blank") { $("source").value = ""; $("extraction").value = ""; }
+    else { $("source").value = EX[i].source; $("extraction").value = JSON.stringify(EX[i].extraction, null, 2); }
+    run();
+  }
+
+  function el(tag, cls, text) { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
+  function pct(x) { return x == null ? "n/a" : Math.round(x * 100) + "%"; }
+
+  function metric(k, v, s) {
+    const d = el("div", "metric"); d.appendChild(el("div", "k", k)); d.appendChild(el("div", "v", v));
+    if (s) d.appendChild(el("div", "s", s)); return d;
+  }
+
+  function renderDoc(source, results) {
+    const doc = $("doc"); doc.textContent = "";
+    const marks = [];
+    results.forEach((r, idx) => {
+      if (r.start16 != null && r.end16 > r.start16) marks.push({ s: r.start16, e: r.end16, cls: r.status, title: r.field + ": " + LABELS[r.status], idx });
+      if (r.status === "misplaced" && r.found) r.found.slice(0, 1).forEach((f) => marks.push({ s: f.start16, e: f.end16, cls: "found", title: r.field + ": where the claimed text really is", idx }));
+    });
+    marks.sort((a, b) => a.s - b.s || b.e - a.e);
+    let pos = 0;
+    for (const m of marks) {
+      if (m.s < pos) continue;
+      if (m.s > pos) doc.appendChild(document.createTextNode(source.slice(pos, m.s)));
+      const mk = el("mark", m.cls, source.slice(m.s, m.e)); mk.title = m.title; doc.appendChild(mk);
+      pos = m.e;
+    }
+    if (pos < source.length) doc.appendChild(document.createTextNode(source.slice(pos)));
+  }
+
+  function run() {
+    $("error").textContent = ""; $("metrics").textContent = ""; $("rows").textContent = "";
+    const source = $("source").value;
+    $("doc").textContent = source;
+    if (!$("extraction").value.trim()) return;
+    let parsed;
+    try { parsed = SB.parseExtraction($("extraction").value); }
+    catch (e) { $("error").textContent = e.message; return; }
+    const rep = SB.verifyAll(source, parsed.spans, { unit: $("unit").value });
+
+    const m = $("metrics");
+    m.appendChild(metric("Span-verifiable rate", pct(rep.spanVerifiableRate), rep.verified + " of " + rep.claims + " claimed values are really at their offsets."));
+    m.appendChild(metric("Provenance coverage", pct(rep.provenanceCoverage), "Claimed values that came with a pointer at all."));
+    m.appendChild(metric("Never store", String(rep.counts.unaligned + rep.counts.unanchored), "Invented, rewritten, or unpointed values."));
+    m.appendChild(metric("Format · offsets", parsed.format, rep.units.length ? "Offsets counted in: " + rep.units.join(", ") : "No offsets matched."));
+
+    renderDoc(source, rep.results);
+
+    rep.results.forEach((r) => {
+      const tr = document.createElement("tr");
+      tr.appendChild(el("td", null, r.field || "—"));
+      const v = el("td"); v.appendChild(el("span", "badge b-" + r.status, LABELS[r.status]));
+      const note = r.note + (r.correctedStart != null ? " Found at " + r.correctedStart + "–" + r.correctedEnd + " (characters)." : "");
+      v.appendChild(el("div", "note", note)); tr.appendChild(v);
+      tr.appendChild(el("td", "mono", r.claimed ? JSON.stringify(r.claimed) : "—"));
+      tr.appendChild(el("td", "mono", r.slice != null ? JSON.stringify(r.slice) : "—"));
+      tr.appendChild(el("td", "mono", r.confidence == null ? "—" : r.confidence.toFixed(2)));
+      $("rows").appendChild(tr);
+    });
+  }
+
+  let t;
+  ["source", "extraction"].forEach((id) => $(id).addEventListener("input", () => { clearTimeout(t); t = setTimeout(run, 150); }));
+  $("unit").addEventListener("change", run);
+  $("example").addEventListener("change", (e) => load(e.target.value));
+  load(EX.length ? 0 : "blank");
+})();
+</script>
+</body>
+</html>

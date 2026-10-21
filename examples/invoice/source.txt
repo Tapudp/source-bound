@@ -1,0 +1,6 @@
+INVOICE No. INV-2026-0418
+Bill to: Harbour Freight Traders Ltd, 12 Quay Road, Felixstowe IP11 3DL
+Date: 2 Oct 2026    Due: 1 Nov 2026
+Ocean freight Shanghai to Felixstowe, 1 x 40ft container    USD 3,840.00
+Terminal handling                                            USD   265.00
+Total due                                                    USD 4,105.00

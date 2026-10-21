@@ -1,0 +1,68 @@
+{
+  "entities": [
+    {
+      "text": "44-1829",
+      "type": "order_id",
+      "confidence": 0.98,
+      "start": 93,
+      "end": 100,
+      "context": "Your order 44-1829 (2 cartons"
+    },
+    {
+      "text": "18.4 kg",
+      "type": "weight",
+      "confidence": 0.95,
+      "start": 113,
+      "end": 120,
+      "context": "2 cartons, 18.4 kg) reached"
+    },
+    {
+      "text": "6110.20",
+      "type": "hs_code",
+      "confidence": 0.91,
+      "start": 192,
+      "end": 199,
+      "context": "HS code 6110.20 flagged"
+    },
+    {
+      "text": "Zöllner Brokerage",
+      "type": "customs_broker",
+      "confidence": 0.88,
+      "start": 222,
+      "end": 239,
+      "context": "review by Zöllner Brokerage."
+    },
+    {
+      "text": "17 Oct",
+      "type": "new_delivery_date",
+      "confidence": 0.86,
+      "start": 162,
+      "end": 168,
+      "context": "estimate: 17 Oct."
+    },
+    {
+      "text": "NWL-77130",
+      "type": "carrier_reference",
+      "confidence": 0.83,
+      "start": 291,
+      "end": 300,
+      "context": "Carrier reference: NWL-77310."
+    },
+    {
+      "text": "",
+      "type": "insurance_value",
+      "confidence": 0,
+      "start": 0,
+      "end": 0,
+      "context": ""
+    },
+    {
+      "text": "Tomás Ruiz",
+      "type": "sender_name",
+      "confidence": 0.97,
+      "start": 312,
+      "end": 322,
+      "context": "Regards,\nTomás Ruiz"
+    }
+  ]
+}

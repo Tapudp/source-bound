@@ -1,0 +1,25 @@
+{
+  "citations": [
+    {
+      "type": "char_location",
+      "cited_text": "Either party may terminate this Agreement for convenience on thirty (30) days' written notice to the other party.",
+      "document_index": 0,
+      "start_char_index": 17,
+      "end_char_index": 130
+    },
+    {
+      "type": "char_location",
+      "cited_text": "the Customer shall pay  all fees accrued up to the\ntermination date.",
+      "document_index": 0,
+      "start_char_index": 188,
+      "end_char_index": 255
+    },
+    {
+      "type": "char_location",
+      "cited_text": "Each party's total liability shall not exceed twice the fees paid in the twelve (12) months before the claim.",
+      "document_index": 0,
+      "start_char_index": 275,
+      "end_char_index": 378
+    }
+  ]
+}

@@ -1,0 +1,124 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:source-bound:spec:span-ledger-entry:0.1",
+  "title": "Span Ledger Entry",
+  "description": "One value an AI system extracted, with the pointer back to its evidence and the result of checking that pointer. Source-Bound v0.1 (draft). Selector names follow the W3C Web Annotation TextPositionSelector and TextQuoteSelector.",
+  "type": "object",
+  "required": ["spec_version", "entry_id", "created_at", "field", "source", "selector", "extractor", "verification"],
+  "additionalProperties": false,
+  "properties": {
+    "spec_version": { "const": "0.1" },
+    "entry_id": { "type": "string", "minLength": 1 },
+    "created_at": { "type": "string", "format": "date-time" },
+    "field": {
+      "type": "object",
+      "required": ["name"],
+      "additionalProperties": false,
+      "properties": {
+        "name": { "type": "string" },
+        "description": { "type": "string", "description": "The plain-language field description the extractor was given." },
+        "pointable": { "type": "boolean", "description": "False for values that cannot be quoted from the source (totals you computed, normalised dates). Those must be derived in code from pointable fields." }
+      }
+    },
+    "value": { "description": "The value as stored downstream. Omit when the verification status is 'absent'." },
+    "source": {
+      "type": "object",
+      "required": ["sha256"],
+      "additionalProperties": false,
+      "properties": {
+        "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$", "description": "Hash of the original source the pointer must resolve against." },
+        "media_type": { "type": "string", "examples": ["text/plain", "application/pdf", "image/png"] },
+        "uri": { "type": "string" },
+        "length": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "transforms": {
+      "type": "array",
+      "description": "Everything that happened between the original source and the text the extractor actually read, in order. A pointer is only as good as its weakest step.",
+      "items": {
+        "type": "object",
+        "required": ["step", "offsets"],
+        "additionalProperties": false,
+        "properties": {
+          "step": { "enum": ["ocr", "chunk", "compress", "summarize", "translate", "normalize", "other"] },
+          "tool": { "type": "string" },
+          "version": { "type": "string" },
+          "output_sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+          "offsets": { "enum": ["preserved", "mapped", "lost"], "description": "preserved: positions unchanged · mapped: an offset map back to the source exists · lost: the step rewrote text and positions cannot be traced back." }
+        }
+      }
+    },
+    "selector": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Where the evidence is. At least one of position, quote or region.",
+      "minProperties": 1,
+      "properties": {
+        "position": {
+          "type": "object",
+          "required": ["start", "end", "unit", "against"],
+          "additionalProperties": false,
+          "properties": {
+            "start": { "type": "integer", "minimum": 0 },
+            "end": { "type": "integer", "minimum": 0 },
+            "unit": { "enum": ["codepoint", "utf16", "byte"], "description": "What the offsets count. Python counts code points, JavaScript counts UTF-16 units, some APIs count UTF-8 bytes." },
+            "against": { "type": "string", "description": "'source' or 'transform:<index>' — the text these offsets index into." }
+          }
+        },
+        "quote": {
+          "type": "object",
+          "required": ["exact"],
+          "additionalProperties": false,
+          "properties": {
+            "exact": { "type": "string" },
+            "prefix": { "type": "string" },
+            "suffix": { "type": "string" }
+          }
+        },
+        "region": {
+          "type": "object",
+          "required": ["page", "bbox"],
+          "additionalProperties": false,
+          "properties": {
+            "page": { "type": "integer", "minimum": 1 },
+            "bbox": { "type": "array", "items": { "type": "number", "minimum": 0, "maximum": 1 }, "minItems": 4, "maxItems": 4, "description": "[x, y, width, height], normalised to the page." }
+          }
+        }
+      }
+    },
+    "extractor": {
+      "type": "object",
+      "required": ["model"],
+      "additionalProperties": false,
+      "properties": {
+        "model": { "type": "string", "description": "Pinned model version, never an alias." },
+        "provider": { "type": "string" },
+        "request_id": { "type": "string" }
+      }
+    },
+    "confidence": { "type": "number", "minimum": 0, "maximum": 1, "description": "As returned by the extractor. Not evidence of calibration on its own." },
+    "verification": {
+      "type": "object",
+      "required": ["status", "checked_at"],
+      "additionalProperties": false,
+      "properties": {
+        "status": { "enum": ["exact", "normalized", "misplaced", "unaligned", "unanchored", "absent", "out_of_range"] },
+        "unit_detected": { "enum": ["codepoint", "utf16", "byte"] },
+        "checked_at": { "type": "string", "format": "date-time" },
+        "checker": { "type": "string" }
+      }
+    },
+    "support": {
+      "type": "object",
+      "description": "The second check: does the quoted evidence actually mean this value? Slice verification cannot answer that.",
+      "additionalProperties": false,
+      "properties": {
+        "status": { "enum": ["supported", "not_supported", "unreviewed"] },
+        "method": { "enum": ["human", "judge_model", "rule"] },
+        "reviewer": { "type": "string" },
+        "reviewed_at": { "type": "string", "format": "date-time" },
+        "cost_usd": { "type": "number", "minimum": 0 }
+      }
+    }
+  }
+}
