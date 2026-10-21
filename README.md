@@ -12,6 +12,19 @@
 
 ---
 
+## What is a Constrained Decoding Model?
+
+On 13 October 2026 ScaleDown launched **Constrained Decoding Models (CDMs)**: four small, cheap task models with a 1-million-token context that reads text, images and PDFs [2].
+
+- **Classify** *decides*: a probability for each label you define.
+- **Extract** *points*: the exact place in your document where each answer is, with start and end positions.
+- **Summarize** *writes* a short summary.
+- **Compress** *cuts* context down to what matters.
+
+**Is it a superset of Jev?** In scope, yes. ScaleDown's decisions endpoint is described as "a drop-in replacement for the Jev Decisions API", with the same choice, score and yes/no questions [5], and the family adds pointing, summarising, compressing, documents and a context window about 15 times larger. In proof, not yet: its accuracy claims are its own, it is not on the independent DecisionBench leaderboard, it publishes no calibration data, and it is narrower in places (20 labels per decision against Jev's 255; text or a document as input rather than any JSON). Full comparison: **[CDMs and Jev](concepts/cdm-and-jev.md)**.
+
+Of everything CDMs add, **pointing** is the part that changes how systems should be built. That is what this repository is about.
+
 ## The idea in one example
 
 An AI reads a shipping email and returns the carrier reference.
@@ -31,6 +44,7 @@ These models are fast and cheap. What is missing is a vendor-neutral way to use 
 
 | Concept | One line | Status |
 |---|---|---|
+| **[CDMs and Jev](concepts/cdm-and-jev.md)** | What a Constrained Decoding Model is, and why it is a superset of Jev in scope but not yet in proof. | **v0.1** |
 | **[Point, Don't Write](concepts/point-dont-write.md)** | Four things a model can do — decide, point, write, cut — and a ten-way taxonomy of how pointers fail. | **v0.1** |
 | **[Verify by Slice](concepts/verify-by-slice.md)** | *Verifiable* (the quote is really there: free) vs *supported* (it's the right quote: costs money). Three metrics and a cost model. | **v0.1** |
 | **[Chain of Custody](concepts/chain-of-custody.md)** | Every step from document to value. OCR and compression break pointers; compression priced as a reject rule. | **v0.1** |
@@ -92,3 +106,4 @@ Text: [CC BY 4.0](LICENSE-TEXT). Code and schemas: [Apache-2.0](LICENSE-CODE).
 2. ScaleDown — documentation. https://docs.scaledown.ai/introduction ; LangChain integration https://www.langchain.com/blog/building-long-running-agents-with-scaledown-and-deep-agents
 3. OpenRouter — decision-output models. https://openrouter.ai/api/v1/models?output_modalities=decisions
 4. ScaleDown — Extract API reference. https://docs.scaledown.ai/api-reference/extract.md
+5. ScaleDown — Decisions API overview. https://docs.scaledown.ai/api-reference/decisions-overview.md

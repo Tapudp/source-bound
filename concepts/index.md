@@ -4,6 +4,7 @@
 
 ## Written up
 
+- **[CDMs and Jev](cdm-and-jev.md)** — what ScaleDown's Constrained Decoding Models are, and a side-by-side with TypeSafe's Jev: a superset in scope, not yet in proof.
 - **[Point, Don't Write](point-dont-write.md)** — the four things a model can do with a document (decide, point, write, cut), the rule for choosing, and a ten-way taxonomy of how pointers fail.
 - **[Verify by Slice](verify-by-slice.md)** — *verifiable* (the quote is really there, checked for free) versus *supported* (it is the right quote, checked at a price); three metrics; a cost model.
 - **[Chain of Custody](chain-of-custody.md)** — every step between the document and the value; OCR and compression as places where pointers break; compression priced as a reject rule.
